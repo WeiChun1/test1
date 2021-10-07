@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>component</title>
+    <style type="text/css">
+        .board {
+            width: 300px;
+            height: 300px;
+            margin: 50px auto;
+            border: 5px solid #000000;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .board>.cell {
+            box-sizing: border-box;
+            width: 100px;
+            height: 100px;
+            line-height: 100px;
+            font-size: 50px;
+            text-align: center;
+            border: 1px solid #000000;
+            cursor: pointer;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .board>.line {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            width: 300px;
+            height: 300px;
+        }
+    </style>
+    <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+        class Line extends React.Component {
+            render() {
+                // 根據贏家的資訊：startIndex 和 endIndex，把線條用 svg 標籤畫在畫面上
+                let startX = this.props.startIndex % 3;
+                let startY = Math.floor(this.props.startIndex / 3);
+                let endX = this.props.endIndex % 3;
+                let endY = Math.floor(this.props.endIndex / 3);
+                return <svg className="line"><line x1={startX * 100 + 50} y1={startY * 100 + 50} x2={endX * 100 + 50} y2={endY * 100 + 50} stroke="red" strokeWidth="5" /></svg>
+            }
+
+        }
+        class Cell extends React.Component {
+            render() {
+                let text = ""
+                if (this.props.mark === 0) {
+                    text = "O"
+                }
+                else if (this.props.mark === 1) {
+                    text = "X"
+                }
+                return <div className="cell" onClick={this.click.bind(this)}>{text}</div>
+            }
+            click() {
+                this.props.update(this.props.index)
+            }
+        }
+        class Board extends React.Component {
+            /*
+                0   1   2
+                3   4   5
+                6   7   8
+            */
+            constructor(props) {
+                super(props)
+                this.state = {
+                    circle: 0,
+                    marks: [-1, -1, -1, -1, -1, -1, -1, -1, -1],
+                    winner: null
+                }
+            }
+            render() {
+                let cells = []
+                for (let i = 0; i < this.state.marks.length; i++) {
+                    cells.push(<Cell index={i} mark={this.state.marks[i]}
+                        update={this.updateMark.bind(this)} />)
+                }
+                if (this.state.winner !== null) {
+                    cells.push(<Line startIndex={this.state.winner.startIndex}
+                        endIndex={this.state.winner.endIndex} marks={this.state.marks} />)
+
+                }
+                return <div className="board" onClick={this.clear.bind(this)}>{cells}</div>
+            }
+            clear() {
+                if (this.state.winner !== null||this.state.circle===9) {
+                    this.setState({
+                        circle: 0,
+                        marks: [-1, -1, -1, -1, -1, -1, -1, -1, -1],
+                        winner: null
+                    })
+                }
+            }
+            updateMark(index) {
+                this.setState((preState) => {
+                    let currentMark = preState.marks[index]
+                    if (currentMark === -1 && preState.winner === null) {
+
+                        let mark = preState.circle % 2
+                        preState.marks[index] = mark
+                        let winner = this.checkWinner(preState.marks)
+                        return {
+                            circle: preState.circle + 1,
+                            marks: preState.marks,
+                            winner: winner
+                        }
+                    }
+                })
+
+            }
+            checkWinner(marks) {
+                let index
+                for (let x = 0; x < 3; x++) {
+                    if (marks[x] !== -1 && marks[x] === marks[x + 3] && marks[x + 3] === marks[x + 6])
+                        return { side: marks[x], startIndex: x, endIndex: x + 6 }
+                }
+                for (let y = 0; y < 3; y++) {
+                    if (marks[3 * y] !== -1 && marks[3 * y] === marks[3 * y + 1] && marks[3 * y + 1] === marks[3 * y + 2])
+                        return { side: marks[3 * y], startIndex: 3 * y, endIndex: 3 * y + 2 }
+                }
+                if (marks[0] !== -1 && marks[0] === marks[4] && marks[4] === marks[8]) {
+                    return { side: marks[0], startIndex: 0, endIndex: 8 }
+                }
+                if (marks[2] !== -1 && marks[2] === marks[4] && marks[4] === marks[6]) {
+                    return { side: marks[2], startIndex: 2, endIndex: 6 }
+                }
+                return null
+            }
+        }
+        window.addEventListener("load", () => {
+            ReactDOM.render(<Board />, document.body)
+        })
+
+
+    </script>
+</head>
+
+</html>
